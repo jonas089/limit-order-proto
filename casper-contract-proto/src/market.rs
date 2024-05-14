@@ -293,6 +293,23 @@ pub fn remove_active_sell_order(price: u64){
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
+pub fn get_highest_ask() -> u64{
+    let sell_limit_order_map_uref: URef = runtime::get_key("sell_limit_order_map")
+    .unwrap()
+    .into_uref()
+    .unwrap();
+    let mut sell_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(sell_limit_order_map_uref).unwrap().unwrap();
+    sell_limit_order_map.last_entry().unwrap().key().to_owned()
+}
+
+pub fn get_lowest_bid() -> u64{
+    let buy_limit_order_map_uref: URef = runtime::get_key("buy_limit_order_map")
+        .unwrap()
+        .into_uref()
+        .unwrap();
+    let mut buy_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(buy_limit_order_map_uref).unwrap().unwrap();
+    buy_limit_order_map.first_entry().unwrap().key().to_owned()
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LimitOrderBuyList{
