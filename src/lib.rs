@@ -1,15 +1,14 @@
 mod storage;
 mod market;
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
-use storage::{MemoryState, MarketOrder, Account};
-use market::{LimitOrder, LimitOrder::BuyOrder, LimitOrder::SellOrder};
+use storage::{MemoryState, Account};
+use market::LimitOrder;
 
-#[test]
-fn test_limit_order_simple(){
+pub fn test_limit_order_simple(){
     let seller_account: Account = Account{
         // 1000 cspr
-        cspr_balance: 1000_000_000_000,
+        cspr_balance: 1_000_000_000_000,
         usdc_balance: 0
     };
 
@@ -41,7 +40,13 @@ fn test_limit_order_simple(){
     // check resulting balances cspr
     let seller_cspr_balance: u64 = state.accounts[&0].cspr_balance;
     let buyer_cspr_balance: u64 = state.accounts[&1].cspr_balance;
+
     assert_eq!(seller_cspr_balance, 999_000_000_000);
     assert_eq!(buyer_cspr_balance, 1_000_000_000);
     // check resulting balances usdc
+}
+
+#[test]
+fn run_basic_test(){
+    test_limit_order_simple();
 }

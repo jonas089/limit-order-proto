@@ -22,7 +22,7 @@ impl MemoryState{
     }
 
     pub fn brute_force_highest_buy_in_range(mut self, lower_bount_motes: u64, upper_bound_motes: u64){
-        println!("Enter brute force!");
+        println!("[WARNING] Enter brute force!");
         for i in (lower_bount_motes..upper_bound_motes).rev(){
             if self.buy_limit_orders.contains_key(&i){
                 self.highest_buy_price = Some(i)
@@ -32,12 +32,12 @@ impl MemoryState{
     }
 }
 
-#[derive(Debug, Clone)]
+/* #[derive(Debug, Clone)]
 pub struct MarketOrder{
     pub side: String, // "buy", "sell"
     pub price: u64,
     pub amount: u64
-}
+}*/
 
 #[derive(Debug, Clone, Copy)]
 pub struct Account{

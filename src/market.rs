@@ -1,5 +1,3 @@
-use std::borrow::BorrowMut;
-
 use crate::storage::{Account, MemoryState};
 #[derive(Debug, Clone, Copy)]
 pub enum LimitOrder {
@@ -24,9 +22,9 @@ impl LimitOrder{
                                         // check all possible prices in range
                                         if amount < to_be_filled{
                                             seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1000_000_000;
+                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
                                             buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1000_000_000;
+                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
                                             to_be_filled -= amount;
                                         }
                                         else if amount == to_be_filled{
@@ -34,13 +32,12 @@ impl LimitOrder{
                                             best_bid_list.remove(id);
                                             // calculate balances
                                             seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1000_000_000;
+                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
                                             buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1000_000_000;
+                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
                                             to_be_filled = 0;
                                         }
-                                        // this could be an "else", but being more explicit improves readabiliy for prototyping
-                                        else if amount >= to_be_filled{
+                                        else{
                                             seller_account.cspr_balance -= to_be_filled;
                                             seller_account.usdc_balance += to_be_filled * price;
                                             buyer_account.cspr_balance += to_be_filled;
@@ -55,15 +52,13 @@ impl LimitOrder{
                             }
                             // for testing the max price is set to 1 usdt
                             state.lowest_sell_price = None;
-                            
                             // todo!("Implement an efficient price discovery algorithm")
-                            state.clone().brute_force_lowest_sell_in_range(499_999_999u64, 500_000_000u64);
+                            state.clone().brute_force_lowest_sell_in_range(499_999_999u64, 500_000_001u64);
                             match state.lowest_sell_price{
                                 Some(s) => {
                                     sell = s;
                                 },
                                 None => {
-                                    println!("No sell found, breaking!");
                                     break;
                                 }
                             }
@@ -75,16 +70,17 @@ impl LimitOrder{
                 }
                 if to_be_filled > 0{
                     // must add this order to the order book, since it was not filled.
-                    match state.highest_buy_price{
+                    match state.lowest_sell_price{
                         Some(buy) => {
                             if price > buy{
-                                state.highest_buy_price = Some(price);
+                                state.lowest_sell_price = Some(price);
                             }
                         },
                         None => {
-                            state.highest_buy_price = Some(price);
+                            state.lowest_sell_price = Some(price);
                         }
                     }
+                    // insert new order
                     if state.buy_limit_orders.contains_key(&price){
                         let mut price_bound_orderbook = state.buy_limit_orders[&price].clone();
                         price_bound_orderbook.push(self);
@@ -110,9 +106,9 @@ impl LimitOrder{
                                         // check all possible prices in range
                                         if amount < to_be_filled{
                                             seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1000_000_000;
+                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
                                             buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1000_000_000;
+                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
                                             to_be_filled -= amount;
                                         }
                                         else if amount == to_be_filled{
@@ -120,17 +116,16 @@ impl LimitOrder{
                                             best_ask_list.remove(id);
                                             // calculate balances
                                             seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1000_000_000;
+                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
                                             buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1000_000_000;
+                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
                                             to_be_filled = 0;
                                         }
-                                        // this could be an "else", but being more explicit improves readabiliy for prototyping
-                                        else if amount >= to_be_filled{
+                                        else{
                                             seller_account.cspr_balance -= to_be_filled;
-                                            seller_account.usdc_balance += to_be_filled * price / 1000_000_000;
+                                            seller_account.usdc_balance += to_be_filled * price / 1_000_000_000;
                                             buyer_account.cspr_balance += to_be_filled;
-                                            buyer_account.usdc_balance -= to_be_filled * price / 1000_000_000;
+                                            buyer_account.usdc_balance -= to_be_filled * price / 1_000_000_000;
                                             to_be_filled = 0
                                         }
                                     },
@@ -142,7 +137,7 @@ impl LimitOrder{
 
                             // for testing the max price is set to 1 usdt
                             state.highest_buy_price = None;
-                            state.clone().brute_force_lowest_sell_in_range(499_999_999u64, 500_000_000u64);
+                            state.clone().brute_force_highest_buy_in_range(499_999_999u64, 500_000_001u64);
                             match state.highest_buy_price{
                                 Some(b) => {
                                     buy = b;
@@ -160,8 +155,8 @@ impl LimitOrder{
                 if to_be_filled > 0{
                     // must add this order to the order book, since it was not filled.
                     match state.lowest_sell_price{
-                        Some(sell) => {
-                            if price < sell{
+                        Some(buy) => {
+                            if price < buy{
                                 state.lowest_sell_price = Some(price);
                             }
                         },
@@ -169,6 +164,7 @@ impl LimitOrder{
                             state.lowest_sell_price = Some(price);
                         }
                     }
+                    // insert new order
                     if state.sell_limit_orders.contains_key(&price){
                         let mut price_bound_orderbook = state.sell_limit_orders[&price].clone();
                         price_bound_orderbook.push(self);
