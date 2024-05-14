@@ -1,6 +1,13 @@
-[package]
-name = "limit-order-proto"
+[workspace]
+resolver = "2"
+
+members = [ "casper-contract-proto",
+  "limit-order-proto",
+  "casper-contract-proto"
+]
+
+[workspace.package]
+name = "market-making"
 version = "0.1.0"
 edition = "2021"
-
-[dependencies]
+license = "MIT OR Apache-2.0"
