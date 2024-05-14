@@ -1,6 +1,6 @@
 mod storage;
 mod market;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use storage::{MemoryState, Account};
 use market::LimitOrder;
@@ -44,6 +44,10 @@ pub fn test_limit_order_simple(){
     assert_eq!(seller_cspr_balance, 999_000_000_000);
     assert_eq!(buyer_cspr_balance, 1_000_000_000);
     // check resulting balances usdc
+    let seller_usdc_balance: u64 = state.accounts[&0].usdc_balance;
+    let buyer_usdc_balance: u64 = state.accounts[&1].usdc_balance;
+    assert_eq!(seller_usdc_balance, 500_000_000);
+    assert_eq!(buyer_usdc_balance, 499_500_000_000);
 }
 
 #[test]
