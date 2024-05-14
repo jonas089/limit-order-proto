@@ -3,9 +3,5 @@
 version = 3
 
 [[package]]
-name = "casper-contract-proto"
-version = "0.1.0"
-
-[[package]]
 name = "limit-order-proto"
 version = "0.1.0"
