@@ -53,10 +53,9 @@ impl LimitOrder{
                             // for testing the max price is set to 1 usdt
                             state.lowest_sell_price = None;
                             // todo!("Implement an efficient price discovery algorithm")
-                            state.clone().brute_force_lowest_sell_in_range(499_999_999u64, 500_000_001u64);
-                            match state.lowest_sell_price{
-                                Some(s) => {
-                                    sell = s;
+                            match state.sell_limit_orders.first_entry() {
+                                Some(entry) => {
+                                    sell = entry.key().to_owned()
                                 },
                                 None => {
                                     break;
@@ -136,11 +135,9 @@ impl LimitOrder{
                             }
 
                             // for testing the max price is set to 1 usdt
-                            state.highest_buy_price = None;
-                            state.clone().brute_force_highest_buy_in_range(499_999_999u64, 500_000_001u64);
-                            match state.highest_buy_price{
-                                Some(b) => {
-                                    buy = b;
+                            match state.buy_limit_orders.first_entry() {
+                                Some(entry) => {
+                                    buy = entry.key().to_owned()
                                 },
                                 None => {
                                     break;

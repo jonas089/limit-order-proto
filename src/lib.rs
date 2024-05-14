@@ -1,6 +1,6 @@
 mod storage;
 mod market;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use storage::{MemoryState, Account};
 use market::LimitOrder;
@@ -18,13 +18,13 @@ pub fn test_limit_order_simple(){
         usdc_balance: 500_000_000_000
     };
 
-    let mut accounts: HashMap<u64, Account> = HashMap::new();
+    let mut accounts: BTreeMap<u64, Account> = BTreeMap::new();
     accounts.insert(0u64, seller_account);
     accounts.insert(1u64, buyer_account);
 
     let mut state = MemoryState{
-        buy_limit_orders: HashMap::new(),
-        sell_limit_orders: HashMap::new(),
+        buy_limit_orders: BTreeMap::new(),
+        sell_limit_orders: BTreeMap::new(),
         accounts,
         lowest_sell_price: None,
         highest_buy_price: None
