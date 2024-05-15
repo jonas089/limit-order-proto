@@ -1,8 +1,8 @@
 extern crate alloc;
-use alloc::{borrow::ToOwned, collections::BTreeMap, vec::{self, Vec}};
+use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec};
 use casper_contract::contract_api::{runtime, storage, system};
-use casper_types::{account::{Account, AccountHash}, bytesrepr::ToBytes, runtime_args, CLType, CLTyped, ContractHash, Key, RuntimeArgs, URef, U512};
-use serde::{Deserialize, Serialize};
+use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512};
+use crate::orders::{LimitOrderSell, LimitOrderBuy};
 
 // Buying CSPR for Cep18
 pub fn execute_limit_buy(){
@@ -30,30 +30,6 @@ pub fn execute_limit_sell(){
         if there is no lowest_sell_price:
             store this sell order in sell_limit_order_map and update lowest_sell_price  (if > or None)
     ");
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderBuyList{
-    pub limit_orders: Vec<LimitOrderBuy>
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderBuy{
-    pub amount: u64,
-    pub price: u64,
-    pub account: AccountHash
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderSellList{
-    pub limit_orders: Vec<LimitOrderSell>
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderSell{
-    pub amount: u64,
-    pub price: u64,
-    pub account: AccountHash
 }
 
 struct Cep18{

@@ -8,7 +8,8 @@ use casper_contract::{
 };
 use casper_types::{Key, URef};
 mod market;
-use market::{LimitOrderBuy, LimitOrderSell};
+use market::{execute_limit_buy, execute_limit_sell};
+pub mod orders;
 
 #[no_mangle]
 pub extern "C" fn init() {
