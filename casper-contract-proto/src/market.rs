@@ -1,202 +1,116 @@
 extern crate alloc;
 use alloc::{borrow::ToOwned, collections::BTreeMap, vec::{self, Vec}};
 use casper_contract::contract_api::{runtime, storage, system};
-use casper_types::{account::{Account, AccountHash}, bytesrepr::ToBytes, CLType, CLTyped, Key, URef, U512};
+use casper_types::{account::{Account, AccountHash}, bytesrepr::ToBytes, runtime_args, CLType, CLTyped, ContractHash, Key, RuntimeArgs, URef, U512};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy)]
-pub enum LimitOrder {
-    BuyOrder { account_hash: AccountHash, price: u64, amount: u64 },
-    SellOrder { account_hash: AccountHash, price: u64, amount: u64 }
+// Buying CSPR for Cep18
+pub fn execute_limit_buy(){
+    todo!("
+        1. Transfer Cep18 to contract, or revert with usererror
+        2. Match against lowest_sell_price
+        if there is a lowest_sell_price:
+            start filling this order
+            if there is no lowest_sell_price left
+                store this buy order and update highest_buy_price
+        if there is no lowest_sell_price:
+            store this buy order in buy_limit_order_map and update highest_buy_price (if < or None)
+    ");
 }
 
-impl LimitOrder{
-    pub fn execute_order(self){
-        match self {
-            Self::BuyOrder { account_hash, price, amount } => {
-                let mut to_be_filled = amount;
-                match state.lowest_sell_price{
-                    Some(mut sell) => {
-                        while sell <= price && to_be_filled > 0{
-                            let mut best_bid_list: Vec<LimitOrder> = state.sell_limit_orders[&sell].clone();
-                            for (id, order) in best_bid_list.clone().into_iter().enumerate(){
-                                match order{
-                                    Self::SellOrder { account_hash, price, amount } => {
-                                        let seller_account: &mut Key = state.accounts.get_mut(&account_hash).unwrap();
-                                        // check all possible prices in range
-                                        if amount < to_be_filled{
-                                            todo!("write function to execute transfer from Key to Key");
-                                            seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
-                                            buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
-                                            to_be_filled -= amount;
-                                        }
-                                        else if amount == to_be_filled{
-                                            // remove from list and commit
-                                            best_bid_list.remove(id);
-                                            // calculate balances
-                                            seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
-                                            buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
-                                            to_be_filled = 0;
-                                        }
-                                        else{
-                                            seller_account.cspr_balance -= to_be_filled;
-                                            seller_account.usdc_balance += to_be_filled * price;
-                                            buyer_account.cspr_balance += to_be_filled;
-                                            buyer_account.usdc_balance -= to_be_filled * price;
-                                            to_be_filled = 0
-                                        }
-                                    },
-                                    Self::BuyOrder { account_hash: _, price: _, amount: _ } => {
-                                        panic!("Invalid order in sell_limit_orders")
-                                    }
-                                }
-                            }
-                            match state.sell_limit_orders.first_entry() {
-                                Some(entry) => {
-                                    sell = entry.key().to_owned()
-                                },
-                                None => {
-                                    break;
-                                }
-                            }
-                        }
-                    },
-                    None => {
+// Selling CSPR for Cep18
+pub fn execute_limit_sell(){
+    todo!("
+        1. Transfer CSPR to contract, or revert with usererror
+        2. Match against highest_buy_price
+        if there is a highest_buy_price:
+            start filling this order
+            if there is no highest_buy_price left
+                store this sell order and update lowest_sell_price
+        if there is no lowest_sell_price:
+            store this sell order in sell_limit_order_map and update lowest_sell_price  (if > or None)
+    ");
+}
 
-                    }
-                }
-                if to_be_filled > 0{
-                    // must add this order to the order book, since it was not filled.
-                    match state.lowest_sell_price{
-                        Some(buy) => {
-                            if price > buy{
-                                state.lowest_sell_price = Some(price);
-                            }
-                        },
-                        None => {
-                            state.lowest_sell_price = Some(price);
-                        }
-                    }
-                    // insert new order
-                    if state.buy_limit_orders.contains_key(&price){
-                        let mut price_bound_orderbook = state.buy_limit_orders[&price].clone();
-                        price_bound_orderbook.push(self);
-                        state.buy_limit_orders.insert(price, price_bound_orderbook);
-                    }
-                    else{
-                        state.buy_limit_orders.insert(price, vec![self]);
-                    }
-                }
-                state.accounts.insert(account_hash, buyer_account);
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LimitOrderBuyList{
+    pub limit_orders: Vec<LimitOrderBuy>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LimitOrderBuy{
+    pub amount: u64,
+    pub price: u64,
+    pub account: AccountHash
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LimitOrderSellList{
+    pub limit_orders: Vec<LimitOrderSell>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LimitOrderSell{
+    pub amount: u64,
+    pub price: u64,
+    pub account: AccountHash
+}
+
+struct Cep18{
+    token_hash: ContractHash
+}
+
+impl Cep18{
+    // requires approval
+    // lock cep18 in contract
+    pub fn cep18_transfer_to_contract(self, contract: Key, sender: Key, amount: u64 ){
+        runtime::call_contract::<()>(
+            self.token_hash,
+            "transfer_from",
+            runtime_args! {
+                "recipient" => contract,
+                "owner" => sender,
+                "amount" => amount
             },
-            Self::SellOrder { account_hash, price, amount } => {
-                let mut seller_account: Account = state.accounts.remove(&account_hash).unwrap();
-                let mut to_be_filled = amount;
-                match state.highest_buy_price{
-                    Some(mut buy) => {
-                        while buy >= price && to_be_filled > 0{
-                            let mut best_ask_list: Vec<LimitOrder> = state.buy_limit_orders[&buy].clone();
-                            for (id, order) in best_ask_list.clone().into_iter().enumerate(){
-                                match order{
-                                    Self::BuyOrder { account_hash, price, amount } => {
-                                        let buyer_account: &mut Account = state.accounts.get_mut(&account_hash).unwrap();
-                                        // check all possible prices in range
-                                        if amount < to_be_filled{
-                                            seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
-                                            buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
-                                            to_be_filled -= amount;
-                                        }
-                                        else if amount == to_be_filled{
-                                            // remove from list and commit
-                                            best_ask_list.remove(id);
-                                            // calculate balances
-                                            seller_account.cspr_balance -= amount;
-                                            seller_account.usdc_balance += amount * price / 1_000_000_000;
-                                            buyer_account.cspr_balance += amount;
-                                            buyer_account.usdc_balance -= amount * price / 1_000_000_000;
-                                            to_be_filled = 0;
-                                        }
-                                        else{
-                                            seller_account.cspr_balance -= to_be_filled;
-                                            seller_account.usdc_balance += to_be_filled * price / 1_000_000_000;
-                                            buyer_account.cspr_balance += to_be_filled;
-                                            buyer_account.usdc_balance -= to_be_filled * price / 1_000_000_000;
-                                            to_be_filled = 0
-                                        }
-                                    },
-                                    Self::SellOrder { account_hash: _, price: _, amount: _ } => {
-                                        panic!("Invalid order in sell_limit_orders")
-                                    }
-                                }
-                            }
-
-                            // for testing the max price is set to 1 usdt
-                            match state.buy_limit_orders.first_entry() {
-                                Some(entry) => {
-                                    buy = entry.key().to_owned()
-                                },
-                                None => {
-                                    break;
-                                }
-                            }
-                        }
-                    },
-                    None => {
-
-                    }
-                }
-                if to_be_filled > 0{
-                    // must add this order to the order book, since it was not filled.
-                    match state.lowest_sell_price{
-                        Some(buy) => {
-                            if price < buy{
-                                state.lowest_sell_price = Some(price);
-                            }
-                        },
-                        None => {
-                            state.lowest_sell_price = Some(price);
-                        }
-                    }
-                    // insert new order
-                    if state.sell_limit_orders.contains_key(&price){
-                        let mut price_bound_orderbook = state.sell_limit_orders[&price].clone();
-                        price_bound_orderbook.push(self);
-                        state.sell_limit_orders.insert(price, price_bound_orderbook);
-                    }
-                    else{
-                        state.sell_limit_orders.insert(price, vec![self]);
-                    }
-                }
-                state.accounts.insert(account_hash, seller_account);
-            }
-        }
+        );
+    }
+    // withdraw cep18 from contract
+    pub fn cep18_transfer_from_contract(self, recipient: Key, amount: u64){
+        runtime::call_contract::<()>(
+            self.token_hash,
+            "transfer",
+            runtime_args! {
+                "recipient" => recipient,
+                "amount" => amount
+            },
+        );
     }
 }
 
-pub fn native_transfer_to_contract(purse: URef, amount: u64){
-    let contract_purse: URef = contract_purse();
-    system::transfer_from_purse_to_purse(
-        purse, 
-        contract_purse, 
-        U512::from(amount), 
-        None
-    );
+struct NativeCspr{
+    contract_purse: URef
 }
 
-pub fn native_transfer_from_contract(recipient: AccountHash, amount: u64){
-    let contract_purse = contract_purse();
-    system::transfer_from_purse_to_account(
-        contract_purse, 
-        recipient, 
-        U512::from(amount), 
-        None
-    );
+impl NativeCspr{
+    // lock cspr in contract
+    pub fn native_transfer_to_contract(self, temp_purse: URef, amount: u64){
+        system::transfer_from_purse_to_purse(
+            temp_purse, 
+            self.contract_purse, 
+            U512::from(amount), 
+            None
+        );
+    }
+    // withdraw cspr to user
+    pub fn native_transfer_from_contract(self, recipient: AccountHash, amount: u64){
+        system::transfer_from_purse_to_account(
+            self.contract_purse, 
+            recipient, 
+            U512::from(amount), 
+            None
+        );
+    }
+    
 }
 
 pub fn contract_purse() -> URef{
@@ -292,42 +206,32 @@ pub fn remove_active_sell_order(price: u64){
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
-pub fn get_lowest_ask() -> u64{
+// must return an option, list can be empty
+pub fn get_lowest_ask() -> Option<u64>{
     let sell_limit_order_map_uref: URef = runtime::get_key("sell_limit_order_map")
     .unwrap()
     .into_uref()
     .unwrap();
     let mut sell_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(sell_limit_order_map_uref).unwrap().unwrap();
-    sell_limit_order_map.first_entry().unwrap().key().to_owned()
+    match sell_limit_order_map.first_entry(){
+        Some(entry) => {
+            Some(entry.key().to_owned())
+        },
+        None => None
+    }
 }
 
-pub fn get_highest_bid() -> u64{
+// must return an option, list can be empty
+pub fn get_highest_bid() -> Option<u64>{
     let buy_limit_order_map_uref: URef = runtime::get_key("buy_limit_order_map")
         .unwrap()
         .into_uref()
         .unwrap();
     let mut buy_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(buy_limit_order_map_uref).unwrap().unwrap();
-    buy_limit_order_map.last_entry().unwrap().key().to_owned()
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderBuyList{
-    pub limit_orders: Vec<LimitOrderBuy>
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderBuy{
-    pub amount: u64,
-    pub account: AccountHash
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderSellList{
-    pub limit_orders: Vec<LimitOrderSell>
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LimitOrderSell{
-    pub amount: u64,
-    pub account: AccountHash
+    match buy_limit_order_map.last_entry(){
+        Some(entry) => {
+            Some(entry.key().to_owned())
+        },
+        None => None
+    }
 }

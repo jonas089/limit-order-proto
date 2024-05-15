@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-
 extern crate alloc;
 use alloc::{collections::BTreeMap, vec::Vec};
 use casper_contract::{
@@ -46,5 +45,4 @@ pub extern "C" fn call(){
 
     let highest_buy_price: URef = storage::new_uref(maybe_u64);
     let lowest_sell_price: URef = storage::new_uref(maybe_u64);
-
 }
