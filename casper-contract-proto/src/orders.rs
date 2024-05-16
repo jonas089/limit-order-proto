@@ -2,6 +2,11 @@ use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec};
 use casper_types::{account::{Account, AccountHash}, bytesrepr::ToBytes, runtime_args, CLType, CLTyped, ContractHash, Key, RuntimeArgs, URef, U512};
 use serde::{Deserialize, Serialize};
 
+// suggestion: Enum for Orders
+// I chose not to use an enum to reduce complexity in singular functions
+// for prototyping.
+// Once the code works and tests pass, this can be reconsidered and restructured.
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LimitOrderBuyList{
     pub limit_orders: Vec<LimitOrderBuy>
