@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec, vec};
 use casper_contract::contract_api::{runtime, storage, system};
-use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512};
+use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512, U256};
 use serde::de::value;
 use crate::orders::{LimitOrderSell, LimitOrderBuy};
 
@@ -119,7 +119,7 @@ impl CepEighteenHelper{
             runtime_args! {
                 "recipient" => contract,
                 "owner" => sender,
-                "amount" => amount
+                "amount" => U256::from(amount)
             },
         );
     }
@@ -130,7 +130,7 @@ impl CepEighteenHelper{
             "transfer",
             runtime_args! {
                 "recipient" => recipient,
-                "amount" => amount
+                "amount" => U256::from(amount)
             },
         );
     }

@@ -15,14 +15,15 @@ use std::env;
 pub const ADMIN_SECRET_KEY: [u8; 32] = [1u8; 32];
 pub const USER_SECRET_KEY: [u8; 32] = [2u8; 32];
 
-#[derive(Default)]
 pub struct TestContext {
     builder: InMemoryWasmTestBuilder,
     pub admin: AccountHash,
     pub user: AccountHash,
     pub contract_hash: ContractHash,
+    pub contract_package_key: Key,
     pub contract_purse: URef,
-    pub cep18_contract_hash: ContractHash
+    pub cep18_contract_hash: ContractHash,
+    pub cep18_contract_package_key: Key
 }
 
 impl TestContext {
@@ -85,6 +86,24 @@ impl TestContext {
             .into_hash()
             .map(ContractHash::new)
             .expect("must get contract hash");
+    
+        let contract_package = builder
+            .get_expected_account(admin)
+            .named_keys()
+            .get("contract_package")
+            .expect("must haveses contract hash key as part of contract creation")
+            .into_hash()
+            .map(ContractHash::new)
+            .expect("must get contract hash");
+
+        let cep18_contract_package = builder
+            .get_expected_account(admin)
+            .named_keys()
+            .get("cep18_contract_package_usdc_contract")
+            .expect("must haveses contract hash key as part of contract creation")
+            .into_hash()
+            .map(ContractHash::new)
+            .expect("must get contract hash");
 
         let _cep18_contract = builder
             .get_contract(cep18_contract_hash)
@@ -95,8 +114,10 @@ impl TestContext {
             admin,
             user,
             contract_hash,
+            contract_package_key: contract_package.into(),
             contract_purse,
-            cep18_contract_hash
+            cep18_contract_hash,
+            cep18_contract_package_key: cep18_contract_package.into()
         }
     }
     
@@ -153,14 +174,14 @@ impl TestContext {
             .unwrap()
     }
 
-    pub fn approve(&mut self, approver: AccountHash, spender: Key, amount: U256, contract_hash: ContractHash){
+    pub fn approve(&mut self, approver: AccountHash, spender: Key, amount: U256, cep18_contract_hash: ContractHash){
         let session_args = runtime_args! {
             "spender" => spender,
             "amount" => amount
         };
         let approve_request = ExecuteRequestBuilder::contract_call_by_hash(
             approver,
-            contract_hash,
+            cep18_contract_hash,
             "approve",
             session_args
         ).build();
@@ -169,6 +190,32 @@ impl TestContext {
             .exec(approve_request)
             .commit()
             .expect_success();
+    }
+
+    // place an order to buy cspr for usdc
+    pub fn limit_buy(&mut self, price: u64, amount: u64, sender: AccountHash){
+        let session_args = runtime_args! {
+            "price" => price,
+            "amount" => amount,
+            "token_hash" => self.cep18_contract_hash,
+            "contract_hash" => Key::from(self.contract_hash)
+        };
+        let limit_buy_request = ExecuteRequestBuilder::contract_call_by_hash(
+            sender,
+            self.contract_hash,
+            "limit_buy",
+            session_args
+        ).build();
+
+        self.builder
+            .exec(limit_buy_request)
+            .commit()
+            .expect_success();
+    }
+    
+    // place an order to buy usdc for cspr
+    pub fn limit_sell(&mut self){
+
     }
 }
 

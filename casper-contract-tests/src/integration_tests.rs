@@ -22,6 +22,17 @@ mod tests {
         fixture.approve(fixture.admin, fixture.user.into(), U256::from(1000_u64), fixture.cep18_contract_hash)
     }
 
+    #[test]
+    fn place_buy_limit_order(){
+        let mut fixture = TestContext::new();
+        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000_u64), fixture.cep18_contract_hash);
+        fixture.limit_buy(1_000_000_000u64, 1000_u64, fixture.admin);
+    }
+
+    #[test]
+    fn place_sell_limit_order(){
+        let mut fixture = TestContext::new();
+    }
     // todo:
     // 1. mint, approve, place a Buy order
     // 2. write session code to place a Sell order
