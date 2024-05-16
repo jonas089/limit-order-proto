@@ -21,18 +21,18 @@ pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_has
                 let best_offer: LimitOrderSell = get_active_sell_order(ask).unwrap();
                 if best_offer.amount / best_offer.price == unfilled{
                     native_helper.native_transfer_from_contract(sender, amount);
-                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), unfilled / best_offer.price);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled);
                     remove_active_sell_order(best_offer.price);
                     unfilled = 0;
                 }
                 else if best_offer.amount / best_offer.price > unfilled{
                     native_helper.native_transfer_from_contract(sender, unfilled);
-                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), unfilled / best_offer.price);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled);
                     unfilled = 0;
                 }
                 else{
                     native_helper.native_transfer_from_contract(sender, best_offer.amount);
-                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), best_offer.amount / best_offer.price);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), best_offer.amount);
                     remove_active_sell_order(best_offer.price);
                     unfilled -= best_offer.amount / best_offer.price;
                 }

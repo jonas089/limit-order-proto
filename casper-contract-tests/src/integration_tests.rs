@@ -45,6 +45,16 @@ mod tests {
         assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10));
     }
 
+    #[test]
+    fn fill_buy_order_instant(){
+        let mut fixture: TestContext = TestContext::new();
+        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000u64), fixture.cep18_contract_hash);
+        fixture.limit_sell(fixture.user, 1_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
+        fixture.limit_buy(1_000_000_000_u64, 10u64, fixture.admin);
+        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999990));
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10));
+    }
+
     // todo:
     // 1. mint, approve, place a Buy order
     // 2. write session code to place a Sell order
