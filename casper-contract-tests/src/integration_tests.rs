@@ -3,7 +3,7 @@ use crate::test_fixture;
 mod tests {
     use crate::test_fixture::TestContext;
     #[test]
-    fn should_install_deposit_contract() {
+    fn should_install_contracts() {
         let _fixture = TestContext::new();
     }
 }

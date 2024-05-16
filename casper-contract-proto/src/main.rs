@@ -97,7 +97,7 @@ pub extern "C" fn call(){
     runtime::put_key("contract_hash", Key::from(contract_hash));
     runtime::call_contract::<()>(
         contract_hash,
-        "initialise",
+        "initialize",
         runtime_args! {},
     );
 }

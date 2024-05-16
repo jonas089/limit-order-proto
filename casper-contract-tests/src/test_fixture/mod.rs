@@ -4,11 +4,7 @@ use casper_engine_test_support::{
 };
 use casper_execution_engine::storage::global_state::in_memory::InMemoryGlobalState;
 use casper_types::{
-    account::AccountHash,
-    crypto::{PublicKey, SecretKey},
-    runtime_args,
-    system::{handle_payment::ARG_TARGET, mint::ARG_ID},
-    RuntimeArgs,
+    account::AccountHash, crypto::{PublicKey, SecretKey}, runtime_args, system::{handle_payment::ARG_TARGET, mint::ARG_ID}, Key, RuntimeArgs, U256
 };
 use std::path::Path;
 
@@ -30,25 +26,34 @@ impl TestContext {
     pub fn new() -> TestContext {
         let mut builder = InMemoryWasmTestBuilder::default();
         builder.run_genesis(&PRODUCTION_RUN_GENESIS_REQUEST);
-
         let admin = create_funded_account_for_secret_key_bytes(&mut builder, ADMIN_SECRET_KEY);
-
-        let deposit_contract_path: std::path::PathBuf = std::path::Path::new(env!("PATH_TO_WASM_BINARIES"))
+        let market_maker_path: std::path::PathBuf = std::path::Path::new(env!("PATH_TO_WASM_BINARIES"))
             .join("casper-contract-proto-optimized.wasm");
         install_wasm_with_args(
             &mut builder,
-            &deposit_contract_path,
+            &market_maker_path,
             admin,
             runtime_args! {},
         );
 
+        /*
         let cep18_contract_path: std::path::PathBuf = std::path::Path::new(env!("PATH_TO_WASM_BINARIES"))
             .join("cep18-optimized.wasm");
+        let admin_list: Vec<Key> = vec![admin.into()];
+        let minter_list: Vec<Key> = vec![admin.into()];
         install_wasm_with_args(
             &mut builder, 
             &cep18_contract_path, 
             admin, 
-            runtime_args! {});
+            runtime_args! {
+                "name" => "usdc_contract".to_string(),
+                "symbol" => "usdc",
+                "decimals" => 9u8,
+                "total_supply" => U256::from(1_000_000u64),
+                "admin_list" => admin_list,
+                "minter_list" => minter_list,
+                "enable_mint_burn" => 1u8
+        });*/
 
         let contract_hash = builder
             .get_expected_account(admin)
