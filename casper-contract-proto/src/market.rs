@@ -1,11 +1,36 @@
 extern crate alloc;
-use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec};
+use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec, vec};
 use casper_contract::contract_api::{runtime, storage, system};
 use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512};
 use crate::orders::{LimitOrderSell, LimitOrderBuy};
 
 // Buying CSPR for Cep18
-pub fn execute_limit_buy(){
+pub fn execute_limit_buy(price: u64, amount: u64, sender: AccountHash, token_hash: ContractHash, contract_key: Key){
+    let cep_helper: CepEighteenHelper = CepEighteenHelper{
+        token_hash
+    };
+    cep_helper.cep18_transfer_to_contract(
+        contract_key, 
+        sender.into(), 
+        amount
+    );
+    match lowest_sell_price(){
+        Some(ask) => {
+            // start filling this order
+            let unfilled: u64 = price;
+
+        },
+        None => {
+            insert_new_buy_order(
+                LimitOrderBuy{
+                    amount,
+                    price,
+                    account: sender
+                },
+                price
+            )
+        }
+    }
     todo!("
         1. Transfer Cep18 to contract, or revert with usererror
         2. Match against lowest_sell_price
@@ -16,10 +41,30 @@ pub fn execute_limit_buy(){
         if there is no lowest_sell_price:
             store this buy order in buy_limit_order_map and update highest_buy_price (if < or None)
     ");
+    
 }
 
 // Selling CSPR for Cep18
-pub fn execute_limit_sell(){
+pub fn execute_limit_sell(price: u64, amount: u64, sender: AccountHash, temp_purse: URef){
+    let native_helper: NativeTransferHelper = NativeTransferHelper{
+        contract_purse: contract_purse()
+    };
+    native_helper.native_transfer_to_contract(temp_purse, amount);
+    match highest_buy_price(){
+        Some(bid) => {
+            let unfilled: u64 = price;
+        },
+        None => {
+            insert_new_sell_order(
+                LimitOrderSell{
+                    amount,
+                    price,
+                    account: sender
+                },
+                price
+            )
+        }
+    }
     todo!("
         1. Transfer CSPR to contract, or revert with usererror
         2. Match against highest_buy_price
@@ -32,11 +77,11 @@ pub fn execute_limit_sell(){
     ");
 }
 
-struct Cep18{
+struct CepEighteenHelper{
     token_hash: ContractHash
 }
 
-impl Cep18{
+impl CepEighteenHelper{
     // requires approval
     // lock cep18 in contract
     pub fn cep18_transfer_to_contract(self, contract: Key, sender: Key, amount: u64 ){
@@ -63,11 +108,11 @@ impl Cep18{
     }
 }
 
-struct NativeCspr{
+struct NativeTransferHelper{
     contract_purse: URef
 }
 
-impl NativeCspr{
+impl NativeTransferHelper{
     // lock cspr in contract
     pub fn native_transfer_to_contract(self, temp_purse: URef, amount: u64){
         system::transfer_from_purse_to_purse(
@@ -179,6 +224,39 @@ pub fn remove_active_sell_order(price: u64){
     let mut current_price_list: Vec<LimitOrderSell> = bincode::deserialize(&sell_limit_order_map[&price]).unwrap();
     current_price_list.remove(0);
     sell_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
+    storage::write(sell_limit_order_map_uref, sell_limit_order_map);
+}
+
+pub fn insert_new_buy_order(order: LimitOrderBuy, price: u64){
+    let buy_limit_order_map_uref: URef = runtime::get_key("buy_limit_order_map")
+        .unwrap()
+        .into_uref()
+        .unwrap();
+    let mut buy_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(buy_limit_order_map_uref).unwrap().unwrap();
+    if buy_limit_order_map.contains_key(&price){
+        let mut current_price_list: Vec<LimitOrderBuy> = bincode::deserialize(&buy_limit_order_map[&price]).unwrap();
+        current_price_list.push(order);
+    }
+    else{
+        buy_limit_order_map.insert(price, bincode::serialize(&order).unwrap());
+    }
+    storage::write(buy_limit_order_map_uref, buy_limit_order_map);
+}
+
+pub fn insert_new_sell_order(order: LimitOrderSell, price: u64){
+    let sell_limit_order_map_uref: URef = runtime::get_key("sell_limit_order_map")
+        .unwrap()
+        .into_uref()
+        .unwrap();
+    let mut sell_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(sell_limit_order_map_uref).unwrap().unwrap();
+    let mut current_price_list: Vec<LimitOrderSell> = bincode::deserialize(&sell_limit_order_map[&price]).unwrap();
+    if sell_limit_order_map.contains_key(&price){
+        let mut current_price_list: Vec<LimitOrderSell> = bincode::deserialize(&sell_limit_order_map[&price]).unwrap();
+        current_price_list.push(order);
+    }
+    else{
+        sell_limit_order_map.insert(price, bincode::serialize(&order).unwrap());
+    }
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
