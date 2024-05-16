@@ -152,6 +152,24 @@ impl TestContext {
             .into_t()
             .unwrap()
     }
+
+    pub fn approve(&mut self, approver: AccountHash, spender: Key, amount: U256, contract_hash: ContractHash){
+        let session_args = runtime_args! {
+            "spender" => spender,
+            "amount" => amount
+        };
+        let approve_request = ExecuteRequestBuilder::contract_call_by_hash(
+            approver,
+            contract_hash,
+            "approve",
+            session_args
+        ).build();
+
+        self.builder
+            .exec(approve_request)
+            .commit()
+            .expect_success();
+    }
 }
 
 pub fn install_wasm_with_args(
