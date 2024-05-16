@@ -308,6 +308,6 @@ pub fn remove_active_sell_order(price: u64){
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
-pub fn validate_mote_value(value: u64) -> bool{
+pub fn validate_full_cspr_value(value: u64) -> bool{
     value % 1_000_000_000 == 0
 }
