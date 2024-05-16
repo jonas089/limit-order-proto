@@ -307,7 +307,3 @@ pub fn remove_active_sell_order(price: u64){
     sell_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
-
-pub fn validate_full_cspr_value(value: u64) -> bool{
-    value % 1_000_000_000 == 0
-}

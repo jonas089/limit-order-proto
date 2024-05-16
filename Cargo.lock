@@ -42,6 +42,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.21.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
+
+[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -123,6 +129,7 @@ dependencies = [
 name = "casper-contract-tests"
 version = "0.1.0"
 dependencies = [
+ "base64 0.21.7",
  "casper-contract",
  "casper-engine-test-support",
  "casper-execution-engine",
@@ -224,7 +231,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e01525b7bbae90fe9de3f1def6ffe05052a94ed7d14b1c2b38baec81eeec31b"
 dependencies = [
  "base16",
- "base64",
+ "base64 0.13.1",
  "bitflags 1.3.2",
  "blake2",
  "datasize",
@@ -950,7 +957,7 @@ version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd56cbd21fea48d0c440b41cd69c589faacade08c992d9a54e471b79d0fd13eb"
 dependencies = [
- "base64",
+ "base64 0.13.1",
  "once_cell",
  "regex",
 ]
