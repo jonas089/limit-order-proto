@@ -2,6 +2,7 @@ extern crate alloc;
 use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec, vec};
 use casper_contract::contract_api::{runtime, storage, system};
 use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512};
+use serde::de::value;
 use crate::orders::{LimitOrderSell, LimitOrderBuy};
 
 // Buying CSPR for Cep18
@@ -307,6 +308,6 @@ pub fn remove_active_sell_order(price: u64){
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
-pub fn validate_mote_price(price: u64) -> bool{
-    price % 1_000_000_000 == 0
+pub fn validate_mote_value(value: u64) -> bool{
+    value % 1_000_000_000 == 0
 }
