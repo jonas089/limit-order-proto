@@ -21,4 +21,9 @@ mod tests {
         let mut fixture = TestContext::new();
         fixture.approve(fixture.admin, fixture.user.into(), U256::from(1000_u64), fixture.cep18_contract_hash)
     }
+
+    // todo:
+    // 1. mint, approve, place a Buy order
+    // 2. write session code to place a Sell order
+    // 3. assert balances and check that orders are being filled as expected
 }
