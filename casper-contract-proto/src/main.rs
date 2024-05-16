@@ -6,7 +6,7 @@ use casper_contract::{
     contract_api::{runtime, storage, system},
     unwrap_or_revert::UnwrapOrRevert,
 };
-use casper_types::{CLType, EntryPoint, EntryPoints, Key, contracts::NamedKeys, URef, NamedKey, runtime_args, RuntimeArgs};
+use casper_types::{account::AccountHash, contracts::NamedKeys, runtime_args, CLType, Contract, ContractHash, EntryPoint, EntryPoints, Key, NamedKey, RuntimeArgs, URef};
 mod market;
 use market::{execute_limit_buy, execute_limit_sell};
 pub mod orders;
@@ -23,12 +23,24 @@ pub extern "C" fn initialize() {
 
 #[no_mangle]
 pub extern "C" fn limit_buy(){
-    todo!("Implement the buy entry point");
+    // price, amount, sender, temp_purse, token_hash, contract_key
+    let price: u64 = runtime::get_named_arg("price");
+    let amount: u64 = runtime::get_named_arg("price");
+    let sender: AccountHash = runtime::get_caller();
+    let token_hash: ContractHash = runtime::get_named_arg("token_hash");
+    let contract_key: Key = runtime::get_key("contract_hash").unwrap();
+    execute_limit_buy(price, amount, sender, token_hash, contract_key);
 }
 
 #[no_mangle]
 pub extern "C" fn limit_sell(){
-    todo!("Implement the sell entry point");
+    // price, amount, sender, temp_purse, token_hash, contract_key
+    let price: u64 = runtime::get_named_arg("price");
+    let amount: u64 = runtime::get_named_arg("price");
+    let sender: AccountHash = runtime::get_caller();
+    let temp_purse: URef = runtime::get_named_arg("temp_purse");
+    let token_hash: ContractHash = runtime::get_named_arg("token_hash");
+    execute_limit_sell(price, amount, sender, temp_purse, token_hash);
 }
 
 // todo: market order, other order types?
@@ -44,7 +56,7 @@ pub extern "C" fn call(){
 
     let buy_limit_order_map: BTreeMap<u64, Vec<u8>> = BTreeMap::new();
     let buy_limit_order_map_uref: URef = storage::new_uref(buy_limit_order_map);
-    
+
     named_keys.insert("buy_limit_order_map".to_string(), buy_limit_order_map_uref.into());
     named_keys.insert("sell_limit_order_map".to_string(), sell_limit_order_map_uref.into());
 
