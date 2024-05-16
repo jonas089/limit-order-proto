@@ -6,7 +6,7 @@ use casper_execution_engine::storage::global_state::in_memory::InMemoryGlobalSta
 use casper_types::{
     bytesrepr::ToBytes, account::AccountHash, crypto::{PublicKey, SecretKey}, runtime_args, system::{handle_payment::ARG_TARGET, mint::ARG_ID}, Key, RuntimeArgs, U256, contracts::NamedKeys
 };
-use std::{borrow::BorrowMut, os::unix::fs::FileExt, path::Path};
+use std::path::Path;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use casper_engine_test_support::{InMemoryWasmTestBuilder, PRODUCTION_RUN_GENESIS_REQUEST};
 use casper_types::{ContractHash, URef};
@@ -147,8 +147,7 @@ impl TestContext {
             .clone()
     }
 
-    pub fn contract_named_keys(&self, contract_name: &str, key_name: &str) -> Key {
-        let contract_hash = self.cep18_contract_hash;
+    pub fn contract_named_keys(&self, contract_hash: ContractHash, key_name: &str) -> Key {
         *self
             .builder
             .get_contract(contract_hash)
@@ -158,11 +157,11 @@ impl TestContext {
             .unwrap()
     }
 
-    pub fn cep_balance(&self, account: Key, name: &str) -> U256 {
+    pub fn cep_balance(&self, account: Key, contract_hash: ContractHash) -> U256 {
         let seed_uref: URef = *self
-            .contract_named_keys(name, "balances")
+            .contract_named_keys(contract_hash, "balances")
             .as_uref()
-            .unwrap();
+            .expect("Failed to find balances");
         let dictionary_key = make_dictionary_item_key(account);
         self.builder
             .query_dictionary_item(None, seed_uref, &dictionary_key)
@@ -200,6 +199,7 @@ impl TestContext {
             "token_hash" => self.cep18_contract_hash,
             "contract_hash" => Key::from(self.contract_hash)
         };
+
         let limit_buy_request = ExecuteRequestBuilder::contract_call_by_hash(
             sender,
             self.contract_hash,
@@ -213,9 +213,18 @@ impl TestContext {
             .expect_success();
     }
     
-    // place an order to buy usdc for cspr
-    pub fn limit_sell(&mut self){
-
+    pub fn limit_sell(&mut self, sender: AccountHash, price: u64, amount: u64, token_hash: ContractHash){
+        let market_maker_path: std::path::PathBuf = std::path::Path::new(env!("PATH_TO_WASM_BINARIES")).join("cspr-session-optimized.wasm");
+        install_wasm_with_args(
+            &mut self.builder, 
+            &market_maker_path,
+            sender,
+            runtime_args! {
+                "price" => price,
+                "amount" => amount,
+                "token_hash" => token_hash,
+                "contract_hash" => self.contract_hash
+        });
     }
 }
 
@@ -228,11 +237,12 @@ pub fn install_wasm_with_args(
     let session_request =
         ExecuteRequestBuilder::standard(user, session_wasm_path.to_str().unwrap(), runtime_args)
             .build();
-    builder.exec(session_request).commit();
+    builder
+        .exec(session_request)
+        .expect_success()
+        .commit();
 }
 
-/// Creates a funded account for the given ed25519 secret key in bytes
-/// It panics if the passed secret key bytes cannot be read
 pub fn create_funded_account_for_secret_key_bytes(
     builder: &mut WasmTestBuilder<InMemoryGlobalState>,
     account_secret_key_bytes: [u8; 32],
@@ -256,4 +266,40 @@ pub fn create_funded_account_for_secret_key_bytes(
 fn make_dictionary_item_key(admin: Key) -> String {
     let preimage = admin.to_bytes().unwrap();
     STANDARD.encode(preimage)
+}
+
+// Creates a dummy account and transfer funds to it
+pub fn create_funded_dummy_account(
+    builder: &mut WasmTestBuilder<InMemoryGlobalState>,
+    account_string: Option<[u8; 32]>,
+) -> AccountHash {
+    let (_, account_public_key) =
+        create_dummy_key_pair(if let Some(account_string) = account_string {
+            account_string
+        } else {
+            [7u8; 32]
+        });
+    let account = account_public_key.to_account_hash();
+    fund_account(builder, account);
+    account
+}
+
+pub fn create_dummy_key_pair(account_string: [u8; 32]) -> (SecretKey, PublicKey) {
+    let secret_key =
+        SecretKey::ed25519_from_bytes(account_string).expect("failed to create secret key");
+    let public_key = PublicKey::from(&secret_key);
+    (secret_key, public_key)
+}
+
+pub fn fund_account(builder: &mut WasmTestBuilder<InMemoryGlobalState>, account: AccountHash) {
+    let transfer = ExecuteRequestBuilder::transfer(
+        *DEFAULT_ACCOUNT_ADDR,
+        runtime_args! {
+            ARG_AMOUNT => DEFAULT_ACCOUNT_INITIAL_BALANCE / 10_u64,
+            ARG_TARGET => account,
+            ARG_ID => Option::<u64>::None,
+        },
+    )
+    .build();
+    builder.exec(transfer).expect_success().commit();
 }

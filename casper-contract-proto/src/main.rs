@@ -24,23 +24,23 @@ pub extern "C" fn initialize() {
 #[no_mangle]
 pub extern "C" fn limit_buy(){
     // price, amount, sender, temp_purse, token_hash, contract_key
-    let price: u64 = runtime::get_named_arg("price");
     let amount: u64 = runtime::get_named_arg("amount");
+    let price: u64 = runtime::get_named_arg("price");
     let sender: AccountHash = runtime::get_caller();
     let token_hash: ContractHash = runtime::get_named_arg("token_hash");
     let contract_key: Key = runtime::get_named_arg("contract_hash");
-    execute_limit_buy(price, amount, sender, token_hash, contract_key);
+    execute_limit_buy(amount, price, sender, token_hash, contract_key);
 }
 
 #[no_mangle]
 pub extern "C" fn limit_sell(){
     // price, amount, sender, temp_purse, token_hash, contract_key
+    let amount: u64 = runtime::get_named_arg("amount");
     let price: u64 = runtime::get_named_arg("price");
-    let amount: u64 = runtime::get_named_arg("price");
     let sender: AccountHash = runtime::get_caller();
     let temp_purse: URef = runtime::get_named_arg("temp_purse");
     let token_hash: ContractHash = runtime::get_named_arg("token_hash");
-    execute_limit_sell(price, amount, sender, temp_purse, token_hash);
+    execute_limit_sell(amount, price, sender, temp_purse, token_hash);
 }
 
 // todo: market order, other order types?

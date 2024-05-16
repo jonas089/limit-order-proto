@@ -1,11 +1,12 @@
 [workspace]
 resolver = "2"
 
-members = [ "casper-contract-tests", "cspr-session",
+members = [ "casper-contract-tests",
   "limit-order-proto",
 ]
 exclude = [
-    "casper-contract-proto"
+    "casper-contract-proto",
+	"cspr-session"
 ]
 
 [workspace.package]
