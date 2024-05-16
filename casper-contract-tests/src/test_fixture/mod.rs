@@ -20,6 +20,7 @@ pub struct TestContext {
     pub admin: AccountHash,
     contract_hash: ContractHash,
     contract_purse: URef,
+    erc20_contract_hash: ContractHash
 }
 
 impl TestContext {
@@ -36,7 +37,7 @@ impl TestContext {
             runtime_args! {},
         );
 
-        /*
+        
         let cep18_contract_path: std::path::PathBuf = std::path::Path::new(env!("PATH_TO_WASM_BINARIES"))
             .join("cep18-optimized.wasm");
         let admin_list: Vec<Key> = vec![admin.into()];
@@ -53,7 +54,7 @@ impl TestContext {
                 "admin_list" => admin_list,
                 "minter_list" => minter_list,
                 "enable_mint_burn" => 1u8
-        });*/
+        });
 
         let contract_hash = builder
             .get_expected_account(admin)
@@ -75,11 +76,25 @@ impl TestContext {
             .as_uref()
             .unwrap();
 
+        let erc20_contract_hash = builder
+            .get_expected_account(admin)
+            .named_keys()
+            .get("cep18_contract_hash_usdc_contract")
+            .expect("must haveses contract hash key as part of contract creation")
+            .into_hash()
+            .map(ContractHash::new)
+            .expect("must get contract hash");
+
+        let erc20_contract = builder
+        .get_contract(erc20_contract_hash)
+        .expect("should have contract");
+
         TestContext {
             builder,
             admin,
             contract_hash,
             contract_purse,
+            erc20_contract_hash
         }
     }
 }
