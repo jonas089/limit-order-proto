@@ -20,7 +20,7 @@ pub fn execute_limit_buy(price: u64, amount: u64, sender: AccountHash, token_has
     // start filling this order
     let mut unfilled: u64 = price;
     while unfilled > 0{
-        match lowest_sell_price(){
+        match get_lowest_ask(){
             Some(ask) => {
                 let best_offer: LimitOrderSell = get_active_sell_order(ask).unwrap();
                 if best_offer.amount == unfilled{
@@ -68,7 +68,7 @@ pub fn execute_limit_sell(price: u64, amount: u64, sender: AccountHash, temp_pur
     // start filling this order
     let mut unfilled: u64 = price;
     while unfilled > 0{
-        match highest_buy_price(){
+        match get_highest_bid(){
             Some(bid) => {
                 let best_offer: LimitOrderBuy = get_active_buy_order(bid).unwrap();
                 if best_offer.amount == unfilled{
@@ -166,38 +166,6 @@ pub fn contract_purse() -> URef{
         .unwrap()
         .into_uref()
         .unwrap()
-}
-
-pub fn highest_buy_price() -> Option<u64>{
-    let highest_buy_price_uref: URef = runtime::get_key("highest_buy_price")
-        .unwrap()
-        .into_uref()
-        .unwrap();
-    storage::read(highest_buy_price_uref).unwrap()
-}
-
-pub fn lowest_sell_price() -> Option<u64>{
-    let lowest_sell_price_uref: URef = runtime::get_key("lowest_sell_price")
-        .unwrap()
-        .into_uref()
-        .unwrap();
-    storage::read(lowest_sell_price_uref).unwrap()
-}
-
-pub fn update_higest_buy_price(price: u64){
-    let highest_buy_price_uref: URef = runtime::get_key("highest_buy_price")
-    .unwrap()
-    .into_uref()
-    .unwrap();
-    storage::write(highest_buy_price_uref, price);
-}
-
-pub fn update_lowest_sell_price(price: u64){
-    let lowest_sell_price_uref: URef = runtime::get_key("lowest_sell_price")
-        .unwrap()
-        .into_uref()
-        .unwrap();
-    storage::write(lowest_sell_price_uref, price);
 }
 
 pub fn get_active_buy_order(price: u64) -> Option<LimitOrderBuy>{
