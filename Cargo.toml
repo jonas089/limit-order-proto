@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = [ "casper-contract-tests",
   "limit-order-proto",
 ]
 exclude = [
