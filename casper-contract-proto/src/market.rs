@@ -2,11 +2,10 @@ extern crate alloc;
 use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec, vec};
 use casper_contract::contract_api::{runtime, storage, system};
 use casper_types::{account::AccountHash, runtime_args, ContractHash, Key, RuntimeArgs, URef, U512, U256};
-use serde::de::value;
 use crate::orders::{LimitOrderSell, LimitOrderBuy};
 
 // Buying CSPR for Cep18
-pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_hash: ContractHash, contract_key: Key){
+pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_hash: ContractHash){
     let mut cep_helper: CepEighteenHelper = CepEighteenHelper{
         token_hash
     };

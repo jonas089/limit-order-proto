@@ -1,4 +1,3 @@
-use crate::test_fixture;
 #[cfg(test)]
 mod tests {
     use casper_types::U256;
@@ -108,12 +107,11 @@ mod tests {
         assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10_000_000_000_u64));
     }
 
-    /*
     #[test]
     fn stress_test_orderbook(){
         let mut fixture: TestContext = TestContext::new();
         fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000_000_000_000u64), fixture.cep18_contract_hash);
-        let order_count: u64 = 2000;
+        let order_count: u64 = 1000;
         let order_amount: u64 = 1_000_000_000; // request to buy 1 CSPR per order
         let mut current_price: u64 = 1_000_000_000; // start with 1 CSPR : 1 USDC
         let price_interval: u64 = 1_000_000_000; // increase the value of CSPR by 1 against USDC for each round
@@ -123,7 +121,7 @@ mod tests {
         }
         println!("Done placing orders.");
         fixture.limit_sell(fixture.user, 2_000_000_000_u64, 2_000_000_000_u64, fixture.cep18_contract_hash);
-    }*/
+    }
 }
 
 // 1000 orders:

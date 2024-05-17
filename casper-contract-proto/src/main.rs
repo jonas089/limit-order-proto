@@ -1,12 +1,9 @@
 #![no_std]
 #![no_main]
 extern crate alloc;
-use alloc::{collections::BTreeMap, vec::Vec, vec, string::String, string::ToString};
-use casper_contract::{
-    contract_api::{runtime, storage, system},
-    unwrap_or_revert::UnwrapOrRevert,
-};
-use casper_types::{account::AccountHash, contracts::NamedKeys, runtime_args, CLType, Contract, ContractHash, EntryPoint, EntryPoints, Key, NamedKey, RuntimeArgs, URef};
+use alloc::{collections::BTreeMap, vec::Vec, vec, string::ToString};
+use casper_contract::contract_api::{runtime, storage, system};
+use casper_types::{account::AccountHash, contracts::NamedKeys, runtime_args, CLType, ContractHash, EntryPoint, EntryPoints, Key, RuntimeArgs, URef};
 mod market;
 use market::{execute_limit_buy, execute_limit_sell};
 pub mod orders;
@@ -28,8 +25,7 @@ pub extern "C" fn limit_buy(){
     let price: u64 = runtime::get_named_arg("price");
     let sender: AccountHash = runtime::get_caller();
     let token_hash: ContractHash = runtime::get_named_arg("token_hash");
-    let contract_key: Key = runtime::get_named_arg("contract_hash");
-    execute_limit_buy(amount, price, sender, token_hash, contract_key);
+    execute_limit_buy(amount, price, sender, token_hash);
 }
 
 #[no_mangle]
