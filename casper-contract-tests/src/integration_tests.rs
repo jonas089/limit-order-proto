@@ -67,6 +67,20 @@ mod tests {
         fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
         assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999985));
         assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(15));
+
+        // this should not be filled immediately
+        fixture.limit_sell(fixture.user, 2_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
+        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999985));
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(15));
+        // fill the sell order
+        fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
+        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999980));
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(20));
+
+        // this should not be filled immediately
+        fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
+        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999980));
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(20));
     }
 
     // todo:
