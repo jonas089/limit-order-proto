@@ -31,8 +31,8 @@ pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_has
                 };
                 let best_offer: LimitOrderSell = get_active_sell_order(ask).unwrap();
                 if best_offer.amount == unfilled{
-                    native_helper.native_transfer_from_contract(sender, best_offer.amount);
-                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), best_offer.amount * best_offer.price / 1_000_000_000_u64);
+                    native_helper.native_transfer_from_contract(sender, unfilled);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled * best_offer.price / 1_000_000_000_u64);
                     remove_active_sell_order(best_offer.price);
                     unfilled = 0;
                 }
@@ -137,19 +137,6 @@ struct CepEighteenHelper{
 }
 
 impl CepEighteenHelper{
-    // requires approval
-    // lock cep18 in contract
-    pub fn cep18_transfer_to_contract(&mut self, contract: Key, sender: Key, amount: u64){
-        runtime::call_contract::<()>(
-            self.token_hash,
-            "transfer_from",
-            runtime_args! {
-                "recipient" => contract,
-                "owner" => sender,
-                "amount" => U256::from(amount)
-            },
-        );
-    }
     // withdraw cep18 from contract
     pub fn cep18_transfer_from_contract(&mut self, recipient: Key, sender: Key, amount: u64){
         runtime::call_contract::<()>(
@@ -297,6 +284,7 @@ pub fn update_active_buy_order(price: u64, updated_order: LimitOrderBuy){
     let mut buy_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(buy_limit_order_map_uref).unwrap().unwrap();
     let mut current_price_list: Vec<LimitOrderBuy> = bincode::deserialize(&buy_limit_order_map[&price]).unwrap();
     current_price_list[0] = updated_order;
+    buy_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
     storage::write(buy_limit_order_map_uref, buy_limit_order_map);
 }
 
@@ -308,6 +296,7 @@ pub fn update_active_sell_order(price: u64, updated_order: LimitOrderSell){
     let mut sell_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(sell_limit_order_map_uref).unwrap().unwrap();
     let mut current_price_list: Vec<LimitOrderSell> = bincode::deserialize(&sell_limit_order_map[&price]).unwrap();
     current_price_list[0] = updated_order;
+    sell_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
 
@@ -319,12 +308,14 @@ pub fn remove_active_buy_order(price: u64){
     let mut buy_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(buy_limit_order_map_uref).unwrap().unwrap();
     let mut current_price_list: Vec<LimitOrderBuy> = bincode::deserialize(&buy_limit_order_map[&price]).unwrap();
     current_price_list.remove(0);
+    
     if current_price_list.is_empty(){
         buy_limit_order_map.remove(&price);
     }
     else{
         buy_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
     }
+
     storage::write(buy_limit_order_map_uref, buy_limit_order_map);
 }
 
@@ -336,11 +327,13 @@ pub fn remove_active_sell_order(price: u64){
     let mut sell_limit_order_map: BTreeMap<u64, Vec<u8>> = storage::read(sell_limit_order_map_uref).unwrap().unwrap();
     let mut current_price_list: Vec<LimitOrderSell> = bincode::deserialize(&sell_limit_order_map[&price]).unwrap();
     current_price_list.remove(0);
+
     if current_price_list.is_empty(){
         sell_limit_order_map.remove(&price);
     }
     else{
         sell_limit_order_map.insert(price, bincode::serialize(&current_price_list).unwrap());
     }
+    
     storage::write(sell_limit_order_map_uref, sell_limit_order_map);
 }
