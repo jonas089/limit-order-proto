@@ -23,68 +23,48 @@ mod tests {
     }
 
     #[test]
-    fn place_buy_limit_order(){
-        let mut fixture = TestContext::new();
-        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000_000_000u64), fixture.cep18_contract_hash);
-        fixture.limit_buy(1_000_000_000u64, 1_000_000_000u64, fixture.admin);
-    }
-
-    #[test]
-    fn place_sell_limit_order(){
-        let mut fixture = TestContext::new();
-        fixture.limit_sell(fixture.admin, 1_000_000_000_u64, 1_000_000_000_u64, fixture.cep18_contract_hash)
-    }
-
-    #[test]
-    fn fill_sell_order_instant(){
+    fn buy_cep18_with_fixed_point_arithmetic(){
         let mut fixture: TestContext = TestContext::new();
-        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000u64), fixture.cep18_contract_hash);
-        fixture.limit_buy(1_000_000_000_u64, 10u64, fixture.admin);
-        fixture.limit_sell(fixture.user, 1_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999990));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10));
+        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000_000_000_000u64), fixture.cep18_contract_hash);
+        // using fixed point arithmetic for this test (similar to production defi)
+        // price represents the amount of CSPR for 1_000_000_000:= 1 USDC, 
+        // precision is hard-coded to 9 decimals for this prototype.
+        // to calculate usdc amount: amount / price
+        // to calculate cspr amount: amount * price
+        let orders_to_be_placed: u64 = 10;
+        let order_amount: u64 = 1_000_000_000; // request to sell 1 CSPR per order
+        let mut current_price: u64 = 1_000_000_000; // start with 1 USDC : 1 CSPR
+        let price_interval: u64 = 1_000_000_000; // increase the value of USDC by 1 against CSPR for each round
+        for _i_u64 in 0_u64..orders_to_be_placed{
+            fixture.limit_sell(fixture.user, current_price, order_amount, fixture.cep18_contract_hash);
+            current_price += price_interval;
+        };
+        // highest price the CSPR buyer is willig to accept is 5 CSPR per USDC for a total of 5 CSPR
+        fixture.limit_buy(2_000_000_000_u64, 2_000_000_000_u64, fixture.admin);
+        // Buyer gets an offer for 1 CSPR at 1 USDC and for 1 CSPR at 2 USDC => The seller should now have 3 USDC in their account.
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(3_000_000_000_u64));
     }
 
     #[test]
-    fn fill_buy_order_instant(){
+    fn sell_cep18_with_fixed_point_arithmetic(){
         let mut fixture: TestContext = TestContext::new();
-        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000u64), fixture.cep18_contract_hash);
-        fixture.limit_sell(fixture.user, 1_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
-        fixture.limit_buy(1_000_000_000_u64, 10u64, fixture.admin);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999990));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10));
+        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000_000_000_000u64), fixture.cep18_contract_hash);
+        // using fixed point arithmetic for this test (similar to production defi)
+        // price represents the amount of CSPR for 1_000_000_000:= 1 USDC, 
+        // precision is hard-coded to 9 decimals for this prototype.
+        // to calculate usdc amount: amount / price
+        // to calculate cspr amount: amount * price
+        let orders_to_be_placed: u64 = 10;
+        let order_amount: u64 = 1_000_000_000; // request to sell 1 USDC per order
+        let mut current_price: u64 = 1_000_000_000; // start with 1 CSPR : 1 USDC
+        let price_interval: u64 = 1_000_000_000; // increase the value of CSPR by 1 against USDC for each round
+        for _i_u64 in 0_u64..orders_to_be_placed{
+            fixture.limit_buy(current_price, order_amount, fixture.admin);
+            current_price += price_interval;
+        };
+
+        // sell 2 CSPR at a min price of 2 CSPR per USDC
+        fixture.limit_sell(fixture.user, 2_000_000_000_u64, 2_000_000_000_u64, fixture.cep18_contract_hash);
+        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(19_000_000_000_u64));
     }
-
-    #[test]
-    fn fill_multiple_orders(){
-        let mut fixture: TestContext = TestContext::new();
-        fixture.approve(fixture.admin, fixture.contract_package_key, U256::from(1000u64), fixture.cep18_contract_hash);
-        fixture.limit_sell(fixture.user, 1_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
-        fixture.limit_sell(fixture.user, 2_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
-        fixture.limit_buy(1_000_000_000_u64, 10u64, fixture.admin);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999990));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(10));
-        fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999985));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(15));
-
-        // this should not be filled immediately
-        fixture.limit_sell(fixture.user, 2_000_000_000_u64, 10_000_000_000_u64, fixture.cep18_contract_hash);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999985));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(15));
-        // fill the sell order
-        fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999980));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(20));
-
-        // this should not be filled immediately
-        fixture.limit_buy(2_000_000_000_u64, 5u64, fixture.admin);
-        assert_eq!(fixture.cep_balance(fixture.admin.into(), fixture.cep18_contract_hash),U256::from(999980));
-        assert_eq!(fixture.cep_balance(fixture.user.into(), fixture.cep18_contract_hash), U256::from(20));
-    }
-
-    // todo:
-    // 1. mint, approve, place a Buy order
-    // 2. write session code to place a Sell order
-    // 3. assert balances and check that orders are being filled as expected
 }

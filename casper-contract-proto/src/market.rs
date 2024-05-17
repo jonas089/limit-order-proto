@@ -30,17 +30,17 @@ pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_has
                     break;
                 };
                 let best_offer: LimitOrderSell = get_active_sell_order(ask).unwrap();
-                if best_offer.amount / best_offer.price == unfilled{
-                    native_helper.native_transfer_from_contract(sender, amount);
-                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled);
+                if best_offer.amount == unfilled{
+                    native_helper.native_transfer_from_contract(sender, best_offer.amount);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), best_offer.amount * best_offer.price / 1_000_000_000_u64);
                     remove_active_sell_order(best_offer.price);
                     unfilled = 0;
                 }
-                else if best_offer.amount / best_offer.price > unfilled{
+                else if best_offer.amount > unfilled{
                     native_helper.native_transfer_from_contract(sender, unfilled);
-                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), unfilled * best_offer.price / 1_000_000_000_u64);
                     update_active_sell_order(best_offer.price, LimitOrderSell{
-                        amount: best_offer.amount - (unfilled * best_offer.price),
+                        amount: best_offer.amount - unfilled,
                         price: best_offer.price,
                         account: best_offer.account
                     });
@@ -48,9 +48,9 @@ pub fn execute_limit_buy(amount: u64, price: u64, sender: AccountHash, token_has
                 }
                 else{
                     native_helper.native_transfer_from_contract(sender, best_offer.amount);
-                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), best_offer.amount);
+                    cep_helper.cep18_transfer_from_contract(best_offer.account.into(), sender.into(), best_offer.amount * best_offer.price / 1_000_000_000_u64);
                     remove_active_sell_order(best_offer.price);
-                    unfilled -= best_offer.amount / best_offer.price;
+                    unfilled -= best_offer.amount;
                 }
             },
             None => {
@@ -94,27 +94,27 @@ pub fn execute_limit_sell(amount: u64, price: u64, sender: AccountHash, temp_pur
                     break;
                 }
                 let best_offer: LimitOrderBuy = get_active_buy_order(bid).unwrap();
-                if best_offer.amount * best_offer.price == unfilled{
-                    native_helper.native_transfer_from_contract(best_offer.account, best_offer.amount);
-                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), best_offer.amount);
+                if best_offer.amount == unfilled{
+                    native_helper.native_transfer_from_contract(best_offer.account, unfilled);
+                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), unfilled * best_offer.price / 1_000_000_000_u64);
                     remove_active_buy_order(best_offer.price);
                     unfilled = 0;
                 }
-                else if best_offer.amount * best_offer.price > unfilled{
+                else if best_offer.amount > unfilled{
                     native_helper.native_transfer_from_contract(best_offer.account, unfilled);
-                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), best_offer.amount);
+                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), unfilled * best_offer.price / 1_000_000_000_u64);
                     update_active_buy_order(best_offer.price, LimitOrderBuy{
-                        amount: best_offer.amount - (unfilled / best_offer.price),
+                        amount: best_offer.amount - unfilled,
                         price: best_offer.price,
                         account: best_offer.account
                     });
                     unfilled = 0;
                 }
                 else{
-                    native_helper.native_transfer_from_contract(best_offer.account, best_offer.amount * best_offer.price);
-                    cep_helper.cep18_transfer_from_contract( sender.into(), best_offer.account.into(), best_offer.amount);
+                    native_helper.native_transfer_from_contract(best_offer.account, best_offer.amount);
+                    cep_helper.cep18_transfer_from_contract(sender.into(), best_offer.account.into(), best_offer.amount * best_offer.price / 1_000_000_000_u64);
                     remove_active_buy_order(best_offer.price);
-                    unfilled -= best_offer.amount * best_offer.price;
+                    unfilled -= best_offer.amount;
                 }
             },
             None => {

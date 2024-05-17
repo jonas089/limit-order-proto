@@ -52,7 +52,7 @@ impl TestContext {
                 "name" => "usdc_contract".to_string(),
                 "symbol" => "usdc",
                 "decimals" => 9u8,
-                "total_supply" => U256::from(1_000_000u64),
+                "total_supply" => U256::from(1_000_000_000_000_000u64), // 1 million tokens w. 9 decimals (similar to cspr)
                 "admin_list" => admin_list,
                 "minter_list" => minter_list,
                 "enable_mint_burn" => 1u8
