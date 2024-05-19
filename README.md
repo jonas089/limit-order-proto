@@ -1,3 +1,5 @@
+⚠️ This is not a production-ready smart contract ⚠️
+
 # How to run Tests
 
 In order to run integration tests:
